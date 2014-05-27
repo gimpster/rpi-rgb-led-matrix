@@ -3,7 +3,7 @@ from ledstatus import LedStatus
 import requests
 from switch import Switch
 import sys
-import thread
+import threading
 import time
 
 
@@ -21,6 +21,47 @@ ledStatus = LedStatus()
 
 
 def main():
+    global passJobs
+    global warnJobs
+    global failJobs
+    global initJobs
+
+    ledStatus.display()
+    time.sleep(5)
+
+    while True:
+        passJobs = []
+        warnJobs = []
+        failJobs = []
+        initJobs = []
+
+        status = threading.Thread(target=check_status)
+        status.start()
+        status.join(60)
+        if status.isAlive():
+            job = 'CHECK STATUS'
+            culprits = ['TIMEOUT']
+            result = 'FAILED'
+            color = BColors.FAIL
+
+            failJobs = [format_job_culprits(job, result, culprits)]
+            print format_job_status(job, color, result, culprits)
+
+        if len(failJobs) > 0:
+            failed()
+        else:
+            if len(warnJobs) > 0:
+                warned()
+            else:
+                if len(initJobs) > 0:
+                    initiated()
+                else:
+                    passed()
+
+        time.sleep(60)
+
+
+def check_status():
     print 'Checking Jenkins...'
     ledStatus.set_status([('Checking Jenkins...', (255, 0, 0))], 'black')
     ledStatus.display()
@@ -66,17 +107,6 @@ def main():
             print e.message
         except StopIteration, e:
             print e.message
-
-    if len(failJobs) > 0:
-        failed()
-    else:
-        if len(warnJobs) > 0:
-            warned()
-        else:
-            if len(initJobs) > 0:
-                initiated()
-            else:
-                passed()
 
 
 def print_culprits(culprits):

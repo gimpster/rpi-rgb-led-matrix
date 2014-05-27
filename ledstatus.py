@@ -2,10 +2,13 @@ import os
 from PIL import ImageFont
 from PIL import Image
 from PIL import ImageDraw
+import subprocess
+import time
 
 
 class LedStatus:
     def __init__(self):
+        self.processes = set()
         self.set_status()
 
     @staticmethod
@@ -33,6 +36,14 @@ class LedStatus:
 
         img.save('status.ppm')
 
-    @staticmethod
-    def display():
-        os.system("./led-matrix 1 status.ppm")
+    def display(self, timeout=0):
+        command = ['./led-matrix', '1', 'status.ppm']
+
+        self.processes.add(subprocess.Popen(command))
+        if timeout > 0:
+            time.sleep(timeout)
+            self.reset_display()
+
+    def reset_display(self):
+        for p in self.processes:
+            p.terminate()
