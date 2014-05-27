@@ -1,4 +1,4 @@
-import bcolors
+from bcolors import BColors
 from ledstatus import LedStatus
 import requests
 from switch import Switch
@@ -40,26 +40,26 @@ def main():
                 result = 'BUILDING' if data['building'] else data['result']
                 for case in Switch(result):
                     if case('SUCCESS'):
-                        color = bcolors.BColors.OKGREEN
+                        color = BColors.OKGREEN
                         passJobs.append(format_job_culprits(job, result, culprits))
                         break
                     if case('UNSTABLE', 'ABORTED', 'NOT_BUILT'):
-                        color = bcolors.BColors.WARNING
+                        color = BColors.WARNING
                         warnJobs.append(format_job_culprits(job, result, culprits))
                         break
                     if case('FAILURE'):
-                        color = bcolors.BColors.FAIL
+                        color = BColors.FAIL
                         failJobs.append(format_job_culprits(job, result, culprits))
                         break
                     if case('BUILDING'):
-                        color = bcolors.BColors.OKBLUE
+                        color = BColors.OKBLUE
                         initJobs.append(format_job_culprits(job, result, culprits))
                     if case():
-                        color = bcolors.BColors.FAIL
+                        color = BColors.FAIL
             else:
                 culprits = [r.status_code]
                 result = 'Invalid HTTP status'
-                color = bcolors.BColors.FAIL
+                color = BColors.FAIL
 
             print format_job_status(job, color, result, culprits)
         except IOError, e:
@@ -97,7 +97,7 @@ def format_culprits(result, culprits):
 
 
 def format_job_status(job, color, result, culprits):
-    return '%s: %s%s%s %s' % (job, color, result, bcolors.BColors.ENDC, format_culprits(result, culprits))
+    return '%s: %s%s%s %s' % (job, color, result, BColors.ENDC, format_culprits(result, culprits))
 
 
 def format_job_culprits(job, result, culprits):
