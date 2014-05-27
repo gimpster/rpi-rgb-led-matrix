@@ -13,8 +13,73 @@ JENKINS_USERNAME = 'authenticated_user'
 JENKINS_PASSWORD = 'authenticated_password'
 JENKINS_JOB_LIST = ['job1', 'job2']
 
+passJobs = []
+warnJobs = []
+failJobs = []
+initJobs = []
+ledStatus = LedStatus()
 
-def print_culprits():
+
+def main():
+    print 'Checking Jenkins...'
+    ledStatus.set_status([('Checking Jenkins...', (255, 0, 0))], 'black')
+    ledStatus.display()
+
+    for job in JENKINS_JOB_LIST:
+        culprits = []
+        color = ''
+
+        try:
+            r = requests.get(JENKINS_JSON_URL % job, auth=(JENKINS_USERNAME, JENKINS_PASSWORD))
+            if 200 <= r.status_code < 300:
+                data = r.json()
+
+                for culprit in data['culprits']:
+                    culprits.append(culprit['fullName'])
+
+                result = 'BUILDING' if data['building'] else data['result']
+                for case in Switch(result):
+                    if case('SUCCESS'):
+                        color = bcolors.BColors.OKGREEN
+                        passJobs.append(format_job_culprits(job, result, culprits))
+                        break
+                    if case('UNSTABLE', 'ABORTED', 'NOT_BUILT'):
+                        color = bcolors.BColors.WARNING
+                        warnJobs.append(format_job_culprits(job, result, culprits))
+                        break
+                    if case('FAILURE'):
+                        color = bcolors.BColors.FAIL
+                        failJobs.append(format_job_culprits(job, result, culprits))
+                        break
+                    if case('BUILDING'):
+                        color = bcolors.BColors.OKBLUE
+                        initJobs.append(format_job_culprits(job, result, culprits))
+                    if case():
+                        color = bcolors.BColors.FAIL
+            else:
+                culprits = [r.status_code]
+                result = 'Invalid HTTP status'
+                color = bcolors.BColors.FAIL
+
+            print format_job_status(job, color, result, culprits)
+        except IOError, e:
+            print e.message
+        except StopIteration, e:
+            print e.message
+
+    if len(failJobs) > 0:
+        failed()
+    else:
+        if len(warnJobs) > 0:
+            warned()
+        else:
+            if len(initJobs) > 0:
+                initiated()
+            else:
+                passed()
+
+
+def print_culprits(culprits):
     out = ''
     if isinstance(culprits, basestring):
         return culprits
@@ -27,16 +92,16 @@ def print_culprits():
         return out
 
 
-def format_culprits(culprits_):
-    return print_culprits() if (result != 'SUCCESS' and len(culprits_) > 0) else ''
+def format_culprits(result, culprits):
+    return print_culprits(culprits) if (result != 'SUCCESS' and len(culprits) > 0) else ''
 
 
-def format_job_status(job_, color_, result_, culprits_):
-    return '%s: %s%s%s %s' % (job_, color_, result_, bcolors.BColors.ENDC, format_culprits(culprits_))
+def format_job_status(job, color, result, culprits):
+    return '%s: %s%s%s %s' % (job, color, result, bcolors.BColors.ENDC, format_culprits(result, culprits))
 
 
-def format_job_culprits(job_, culprits_):
-    return '%s %s' % (job_, format_culprits(culprits_))
+def format_job_culprits(job, result, culprits):
+    return '%s %s' % (job, format_culprits(result, culprits))
 
 
 def passed():
@@ -76,64 +141,5 @@ def initiated():
     ledStatus.display()
 
 
-passJobs = []
-warnJobs = []
-failJobs = []
-initJobs = []
-ledStatus = LedStatus()
-lastUpdate = time.time()
-
-print 'Checking Jenkins...'
-ledStatus.set_status([('Checking Jenkins...', (255, 0, 0))], 'black')
-ledStatus.display()
-for job in JENKINS_JOB_LIST:
-    color = ''
-    culprits = []
-    try:
-        r = requests.get(JENKINS_JSON_URL % job, auth=(JENKINS_USERNAME, JENKINS_PASSWORD))
-        if 200 <= r.status_code < 300:
-            data = r.json()
-
-            for culprit in data['culprits']:
-                culprits.append(culprit['fullName'])
-
-            result = 'BUILDING' if data['building'] else data['result']
-            for case in Switch(result):
-                if case('SUCCESS'):
-                    color = bcolors.BColors.OKGREEN
-                    passJobs.append(format_job_culprits(job, culprits))
-                    break
-                if case('UNSTABLE', 'ABORTED', 'NOT_BUILT'):
-                    color = bcolors.BColors.WARNING
-                    warnJobs.append(format_job_culprits(job, culprits))
-                    break
-                if case('FAILURE'):
-                    color = bcolors.BColors.FAIL
-                    failJobs.append(format_job_culprits(job, culprits))
-                    break
-                if case('BUILDING'):
-                    color = bcolors.BColors.OKBLUE
-                    initJobs.append(format_job_culprits(job, culprits))
-                if case():
-                    color = bcolors.BColors.FAIL
-
-            print format_job_status(job, color, result, culprits)
-        else:
-            culprits = [r.status_code]
-            result = 'Invalid HTTP status code'
-            color = bcolors.BColors.FAIL
-    except IOError, e:
-        print e.message
-    except StopIteration, e:
-        print e.message
-
-if len(failJobs) > 0:
-    failed()
-else:
-    if len(warnJobs) > 0:
-        warned()
-    else:
-        if len(initJobs) > 0:
-            initiated()
-        else:
-            passed()
+if __name__ == '__main__':
+    sys.exit(main())
