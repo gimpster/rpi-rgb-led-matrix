@@ -3,7 +3,6 @@ from PIL import ImageFont
 from PIL import Image
 from PIL import ImageDraw
 import subprocess
-import time
 
 
 class LedStatus:
@@ -16,7 +15,6 @@ class LedStatus:
         if not text:
             text = [("Raspberry Pi ", (255, 0, 0))]
         font = ImageFont.truetype(os.path.dirname(os.path.realpath(__file__)) + '/C&C Red Alert [INET].ttf', 14)
-        # font = ImageFont.truetype("/usr/share/fonts/truetype/freefont/FreeSans.ttf", 16)
         all_text = ''
         for text_color_pair in text:
             t = text_color_pair[0]
@@ -36,14 +34,19 @@ class LedStatus:
 
         img.save('status.ppm')
 
-    def display(self, timeout=0):
+    def display(self):
         command = ['./led-matrix', '1', 'status.ppm']
+        self.reset_display()
 
-        self.processes.add(subprocess.Popen(command))
-        if timeout > 0:
-            time.sleep(timeout)
-            self.reset_display()
+        self.processes.add(
+            subprocess.Popen(command,
+                             stdin=subprocess.PIPE,
+                             stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE))
 
     def reset_display(self):
         for p in self.processes:
-            p.terminate()
+            (stdout_data, stderr_data) = p.communicate(input='\n')
+            if not stderr_data:
+                print stderr_data
+        self.processes = set()
