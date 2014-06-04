@@ -54,7 +54,8 @@ class JobStatus():
 
     def display_status(self, status_message='', job_list=list(), bgcolor='black'):
         print status_message
-        text = [('%s: ' % status_message, (0, 0, 0))].extend(JobStatus.format_job_color_tuple(job_list))
+        text = [('%s: ' % status_message, (0, 0, 0))]
+        text.extend(JobStatus.format_job_color_tuple(job_list))
         self.led_status.set_status(text, bgcolor)
         self.led_status.display()
 
