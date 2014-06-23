@@ -1,4 +1,5 @@
 import os
+from PIL.ImageColor import getrgb
 from PIL import ImageFont
 from PIL import Image
 from PIL import ImageDraw
@@ -22,13 +23,15 @@ class LedStatus:
 
         width, ignore = font.getsize(all_text)
 
-        img = Image.new('RGB', (max(width, 128), 16), bgcolor)
+        # img = Image.new('RGB', (max(width, 128), 16), bgcolor)
+        img = Image.new('RGB', (max(width, 128), 16), 'black')
         draw = ImageDraw.Draw(img)
 
         x = 0
         for text_color_pair in text:
             t = text_color_pair[0]
-            c = text_color_pair[1]
+            # c = text_color_pair[1]
+            c = getrgb(bgcolor)
             draw.text((x, 2), t, c, font=font)
             x = x + font.getsize(t)[0]
 
