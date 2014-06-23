@@ -22,7 +22,7 @@ class LedStatus:
 
         width, ignore = font.getsize(all_text)
 
-        img = Image.new('RGB', (max(width, 32), 16), bgcolor)
+        img = Image.new('RGB', (max(width, 128), 16), bgcolor)
         draw = ImageDraw.Draw(img)
 
         x = 0
