@@ -14,7 +14,7 @@ class LedStatus:
     def set_status(text=None, bgcolor='black'):
         if not text:
             text = [("Raspberry Pi ", (255, 0, 0))]
-        font = ImageFont.truetype(os.path.dirname(os.path.realpath(__file__)) + '/C&C Red Alert [INET].ttf', 14)
+        font = ImageFont.truetype(os.path.dirname(os.path.realpath(__file__)) + '/C&C Red Alert [INET].ttf', 13)
         all_text = ''
         for text_color_pair in text:
             t = text_color_pair[0]
