@@ -37,7 +37,7 @@ class JobStatus():
         self.init_jobs = []
 
         print 'Checking Jenkins...'
-        self.led_status.set_status([('Checking Jenkins...', (255, 0, 0))], 'black')
+        self.led_status.set_status([('Checking Jenkins...', (255, 0, 0))], 'white')
         self.led_status.display()
 
         for job in self.jenkins_job_list:
