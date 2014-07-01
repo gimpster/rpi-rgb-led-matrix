@@ -15,9 +15,7 @@ from switch import Switch
 
 
 class JobStatus():
-    def __init__(self, jenkins_username, jenkins_password, jenkins_job_list):
-        self.jenkins_username = jenkins_username
-        self.jenkins_password = jenkins_password
+    def __init__(self, jenkins_job_list):
         self.jenkins_job_list = jenkins_job_list
 
         self.pass_jobs = []
@@ -88,38 +86,42 @@ class JobStatus():
         color = ''
 
         try:
-            r = requests.get(job, auth=(self.jenkins_username, self.jenkins_password), verify=False)
+            if job.username and job.password:
+                r = requests.get(job.url, auth=(job.username, job.password), verify=False)
+            else:
+                r = requests.get(job.url, verify=False)
+
             if 200 <= r.status_code < 300:
                 data = r.json()
 
                 for culprit in data['culprits']:
                     culprits.append(culprit['fullName'])
 
-                result = 'BUILDING' if data['building'] else data['result']
-                for case in Switch(result):
+                job.status = 'BUILDING' if data['building'] else data['result']
+                for case in Switch(job.status):
                     if case('SUCCESS'):
                         color = BColors.OKGREEN
-                        self.pass_jobs.append(JobStatus.format_job_culprits(job, result, culprits))
+                        self.pass_jobs.append(JobStatus.format_job_culprits(job.name, job.status, culprits))
                         break
                     if case('UNSTABLE', 'ABORTED', 'NOT_BUILT'):
                         color = BColors.WARNING
-                        self.warn_jobs.append(JobStatus.format_job_culprits(job, result, culprits))
+                        self.warn_jobs.append(JobStatus.format_job_culprits(job.name, job.status, culprits))
                         break
                     if case('FAILURE'):
                         color = BColors.FAIL
-                        self.fail_jobs.append(JobStatus.format_job_culprits(job, result, culprits))
+                        self.fail_jobs.append(JobStatus.format_job_culprits(job.name, job.status, culprits))
                         break
                     if case('BUILDING'):
                         color = BColors.OKBLUE
-                        self.init_jobs.append(JobStatus.format_job_culprits(job, result, culprits))
+                        self.init_jobs.append(JobStatus.format_job_culprits(job.name, job.status, culprits))
                     if case():
                         color = BColors.FAIL
             else:
                 culprits = [r.status_code]
-                result = 'Invalid HTTP status'
+                job.status = 'Invalid HTTP status'
                 color = BColors.FAIL
 
-            print JobStatus.format_job_status(job, color, result, culprits)
+            print JobStatus.format_job_status(job.name, color, job.status, culprits)
         except IOError, e:
             print e.message
         except StopIteration, e:
